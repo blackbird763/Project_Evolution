@@ -31,13 +31,13 @@ public class GUI extends Shell {
 
 	public GUI(Display display) {
 		super(display, SWT.SHELL_TRIM);
-		
+		createContents();
 		Composite composite = new Composite(this, SWT.NONE);
 		composite.setBounds(10, 10, 224, 223);
 		
 		Canvas canvas = new Board(composite);			//Board classe, welche Canvas Extended. Hier steckt der komplette Code Dahinter!
 		canvas.setBounds(10, 10, 200, 200);
-		createContents();
+	
 		
 		
 		

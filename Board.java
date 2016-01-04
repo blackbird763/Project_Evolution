@@ -5,6 +5,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -17,21 +18,24 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 
 
 public class Board extends Canvas {
 
-	private final int WIDTH = 200;				//Pixelbreite des Canvas
+	private final int FIRSTHUNTERS = 10;
+	private int WIDTH = 200;				//Pixelbreite des Canvas
+	 private int HEIGHT = 200;	
 	private final int STARTAMOUNT =2000;
-    private final int HEIGHT = 200;				//Pixelhöhe des Canvas
     private final int DOT_SIZE = 2;				// 2x2 sprites
-    private final int ALL_DOTS = 10000;			//alle maximalen Dots
+    private final int ALL_DOTS = (WIDTH/DOT_SIZE)*(HEIGHT/DOT_SIZE);			//alle maximalen Dots
     private  int DELAY = 500;				// Laufgeschwindigkeit
-    private  int DELAYPICTURE = 2000;				// Laufgeschwindigkeit
+    private  int DELAYPICTURE = 10000;				// Laufgeschwindigkeit
     private int activeThreadsCount = 0;
     private int activeFoodCount =0;
+    private int RESPAWN = 10;
     
     private Display display;
     private Shell shell;
@@ -43,27 +47,21 @@ public class Board extends Canvas {
     
     private  String newline = System.getProperty("line.separator");
     
-    public Hunter[] hunters = new Hunter[200]; 
-   public Thread[] th = new Thread[200];
+    public Hunter[] hunters = new Hunter[1024]; 
+   public Thread[] th = new Thread[1024];
+   public Textwork Txtfile = new Textwork();
     public Image foodimg;
     public Image hunterimg;
               
 public Board(Composite composite) {
 		super(composite,SWT.NULL);
 		shell = composite.getShell();
+		
+		
 	
-		BufferedWriter writer = null;
-		String newline = System.getProperty("line.separator");
+		Txtfile.writeHeaderData(STARTAMOUNT, RESPAWN, ALL_DOTS);
 		
-		try {
-			Writer fileWriter = new FileWriter("testdaten.txt");
-			fileWriter.write("TESTVERSUCH START" + newline );
-			fileWriter.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+		System.out.println("height: " + HEIGHT + "width: " + WIDTH );
 		initBoard();								//Boardfunktionen des Programms werden initialisiert
 	
 	}
@@ -85,11 +83,6 @@ private void initBoard()
 	createFirstField();											//Funktion, um die erste Nahrungsverteilung zufällig zu erstellen
 	
 	
-	hunters[1] = new Hunter();							
-	 th[1] = new Thread(hunters[1]);
-	th[1].start();							//ersten Hunter initalisieren als eigenen Thread und starten
- activeThreadsCount++;
-	
 	
 	addListener(SWT.Paint, event -> drawAll(event));			//immer, wenn jemand das Canvas neu bemalen will, wird die fkt. drawAll aufgerufen
 																//drawAll malt das momentane Raster auf das Canvas um den Fortschritt visuell darzustellen
@@ -98,8 +91,7 @@ private void initBoard()
 	
 	addListener(SWT.Dispose, event -> {	//wenn die Shell geschlossen wird dann wird das folgende event ausgeführt	  
         for (int i = 1;i<=activeThreadsCount; i++)
-        {
-        	
+        {       	
 		th[i].interrupt();	
         };
 		
@@ -118,20 +110,16 @@ private void initBoard()
         	
         	
         	
-        	feeding();
+        	
         	makeBabys();
         	killingHunters();
-        	
+        	feeding();
         
-        	for (int i = 1;i<=activeThreadsCount; i++)
-     		{setMonsterUnit(hunters[i].getx(),hunters[i].gety()); } 		//Die aktuelle Position der Hunter abfragen und auf das Spielfeld setzen für die Visuelle Darstellung
-        	
-        	
-        
+        	setAllHunters();
         	
         	
             display.timerExec(DELAY, this);			//stell sicher, das der Thread läuft, solange wie das Programm geöffnet ist
-  //          redraw();  								//schickt Redraw befehl, führt dadurch den SWT.Paint Listener aus (~68)
+						
         } 
     };
 display.timerExec(DELAY, runnable1);		
@@ -146,15 +134,11 @@ public void run() {
 display.timerExec(DELAYPICTURE, this);			//stell sicher, das der Thread läuft, solange wie das Programm geöffnet ist
 redraw();//schickt Redraw befehl, führt dadurch den SWT.Paint Listener aus (~68)
 
+countFoodUnits();
 
-try {
-	Writer fileWriter = new FileWriter("testdaten.txt",true);
-	fileWriter.write(activeThreadsCount + "," + activeFoodCount + newline );
-	fileWriter.close();
-} catch (IOException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-}
+Txtfile.writeData(activeThreadsCount, activeFoodCount);
+
+
 
 
 System.out.println(activeThreadsCount + "," + activeFoodCount);
@@ -166,6 +150,11 @@ display.timerExec(DELAYPICTURE, runnableREDRAWING);
     
 }
 
+private void setAllHunters()
+{
+	for (int i = 1;i<=activeThreadsCount; i++)
+		{		if(th[i].isInterrupted() == false)	{setMonsterUnit(hunters[i].getx(),hunters[i].gety());}		 } 		//Die aktuelle Position der Hunter abfragen und auf das Spielfeld setzen für die Visuelle Darstellung
+}
 
 private void killingHunters()
 {
@@ -173,21 +162,17 @@ private void killingHunters()
     {
     	
    
-    	if (hunters[i].getfood() == 0)
+    	if (hunters[i].getfood() <= 0)
     	{
-    		
-	
-    		
-    		int f = i;
-    		for(int j =f;j<activeThreadsCount;j++)   		
+    				
+    		for(int j=i;j<activeThreadsCount;j++)   		
     		{
     			hunters[j]=hunters[j+1];
     			//th[j]=th[j+1];
-    		};
+    		};  		   		
     		th[activeThreadsCount].interrupt();
     		activeThreadsCount--;
-    		
-    		
+   		
     	}
 
     	
@@ -202,14 +187,31 @@ private void setMonsterUnit(int x, int y)			//setzt Monsterpositionen auf das fe
 	
 }
 
+private void countFoodUnits()
+{
+	activeFoodCount = 0;
+	for(int a=0;a<HEIGHT/DOT_SIZE;a++)
+	{
+		for(int b=0;b<HEIGHT/DOT_SIZE;b++)
+    	{
+    		if(Raster[a][b] == 1)
+    		{
+    			activeFoodCount++;
+    		}
+    	}       		
+	}
+}
+
 private void feeding()
 {
 	
 	 for (int i = 1;i<=activeThreadsCount; i++)
      {
-	if(getInhaltUnit(hunters[i].getx(),hunters[i].gety()) == 1)		
-		hunters[i].feedme();// wenn ein Hunter auf einem FoodFeld steht bekommt er Nahrung dazu
-		activeFoodCount--;
+	if(getInhaltUnit(hunters[i].getx(),hunters[i].gety()) == 1 && th[i].isInterrupted() == false)		
+		{
+		Raster[hunters[i].getx()][hunters[i].gety()] = 0;
+		hunters[i].feedme();
+		}			// wenn ein Hunter auf einem FoodFeld steht bekommt er Nahrung dazu
      }	
 
 }
@@ -217,7 +219,7 @@ private void feeding()
 private void addFood()							//Spawnd neue Nahrung
 {
 
-	for(int i=0; i<2 ; i++)							//i = MENGE
+	for(int i=0; i<RESPAWN ; i++)							//i = MENGE
 	{	
 	
 		if(setfoodUnit(ThreadLocalRandom.current().nextInt(0, HEIGHT/DOT_SIZE),ThreadLocalRandom.current().nextInt(0, WIDTH/DOT_SIZE)) == 1	)	
@@ -259,6 +261,20 @@ private void createFirstField()		//erstes Spielfeld mit Nahrung füllen  MENGE
 			i--;
 		}
 	};
+	
+	for (int i = 1; i <= FIRSTHUNTERS; i++)
+	{
+		hunters[i] = new Hunter();							
+		th[i] = new Thread(hunters[i]);
+		hunters[i].resetParameters();
+		hunters[i].setx(ThreadLocalRandom.current().nextInt(0, HEIGHT/DOT_SIZE));
+		hunters[i].sety(ThreadLocalRandom.current().nextInt(0, HEIGHT/DOT_SIZE));
+		th[i].start();							//ersten Hunter initalisieren als eigenen Thread und starten
+		activeThreadsCount++;
+	}
+	
+	
+	
 }
 
 private void ResetRaster()
@@ -282,7 +298,6 @@ private byte setfoodUnit(int x,int y)
 	if (Raster[y][x]==0)
 	{
 	Raster[y][x]=1;
-	activeFoodCount++;
 	return 0;
 	}
 	else {return 1;}
@@ -304,9 +319,9 @@ private void drawAll(Event e)
 
     gc.setAntialias(SWT.ON);
    
-   for(int a=0;a<=(HEIGHT/DOT_SIZE)-1;a++)
+   for(int a=0;a<(HEIGHT/DOT_SIZE);a++)
    {
-    	for(int i=0;i<=(WIDTH/DOT_SIZE)-1;i++)
+    	for(int i=0;i<(WIDTH/DOT_SIZE);i++)
     	{
     		if(getInhaltUnit(i,a)==1)
     		{
@@ -328,7 +343,6 @@ private void drawAll(Event e)
     
 	
 }
-
 
 
 }
