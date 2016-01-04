@@ -7,11 +7,11 @@ import org.eclipse.swt.widgets.Display;
 
 public class Hunter implements Runnable{			//Macht die Classe zu einen Threadbaren Objekt
 
-    private  int DELAY = 200;
+    private  int DELAY = 500;
 private int xposnow = 10;
 private int yposnow = 20;
-private int food = 400;				//Hungerwert
-
+private int food = 200;				//Hungerwert
+private int love = 0;
 
 	@Override
 	public void run() {
@@ -40,19 +40,29 @@ public void feedme()			//erhöt die Nahrung
 	if (food <= 400)
 	{
 		food = food +100;
+		love = love +1;
 	}
+	
 }
 
-public int gethunger()
+public boolean howdeepisyourlove()
+{
+	if (love >= 5 && food >=200)
+	{
+	return true;
+	}else return false;
+}
+
+public void setlove(int a)
+{
+	love = a;
+}
+
+public int getfood()
 {
 	return food;
 }
 
-public void CreateHunter(int i, int j)		//setzt die Position des Hunters um
-{
-	xposnow=i;
-	yposnow=j;
-}
 
 public void MoveHunter()			//die bewegungsmechanismen. Im moment noch sehr simpel und willkürlich !! 
 {
@@ -82,7 +92,13 @@ int f = rand.nextInt(41);		// random int erzeugen zwischen 0 und 40 und dann je 
 	
 }
 
-
+public void resetParameters()
+{
+	love = 0;
+	food = 200;
+	xposnow = 10;
+	yposnow = 20;
+}
 
 public int getx()
 {
@@ -94,6 +110,14 @@ public int gety()
 	return yposnow;
 }
 
+public void setx(int a)
+{
+	xposnow = a;
+}
 
+public void sety(int a)
+{
+	yposnow = a;
+}
 
 }
