@@ -36,6 +36,7 @@ public class Board extends Canvas {
     private int activeThreadsCount = 0;
     private int activeFoodCount =0;
     private int RESPAWN = 10;
+    private int foodcount = STARTAMOUNT;
     
     private Display display;
     private Shell shell;
@@ -199,7 +200,8 @@ private void countFoodUnits()
     			activeFoodCount++;
     		}
     	}       		
-	}
+	} 
+	foodcount = activeFoodCount;
 }
 
 private void feeding()
@@ -219,7 +221,7 @@ private void feeding()
 private void addFood()							//Spawnd neue Nahrung
 {
 
-	for(int i=0; i<RESPAWN ; i++)							//i = MENGE
+	for(int i=0; i<(foodcount/4) ; i++)							//i = MENGE
 	{	
 	
 		if(setfoodUnit(ThreadLocalRandom.current().nextInt(0, HEIGHT/DOT_SIZE),ThreadLocalRandom.current().nextInt(0, WIDTH/DOT_SIZE)) == 1	)	
@@ -344,5 +346,12 @@ private void drawAll(Event e)
 	
 }
 
+public int getactivehunters() {
+	return 0;
+}
 
+public int getactivefood()
+{
+return activeFoodCount;	
+}
 }
