@@ -15,8 +15,9 @@ public class GUI extends Shell {
 	private Runnable runnabletext;
 	
 	/**
-	 * Launch the application.
-	 * @param args
+	 *
+	 * HAUPTPROGRAMM
+	 * Initialisiert die SWT Sprite und das Generelle Design. die Komplette Logik befindet sich in der Board Classe
 	 */
 	public static void main(String args[]) {
 		try {
